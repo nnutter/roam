@@ -39,7 +39,8 @@ setup() {
 			--) break;;
 			-b) branch="$1"; shift;;
 			-r) repo="$1"; shift;;
-	esac
+		esac
+    done
  
 	setup-init
 	setup-remote "$repo"
