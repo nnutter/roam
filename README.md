@@ -12,3 +12,9 @@ You can also still use `.gitignore` to ignore files you definitely do not want t
 
 This has served me well for over 15 years.
 My one slight annoyance is the manual set up required for a new host/account which this repo and this version of `roam` will address.
+
+## Installation
+
+```
+wget -qO- https://github.com/nnutter/roam/raw/refs/heads/master/roam.sh | bash -s setup <github_repo>
+```
