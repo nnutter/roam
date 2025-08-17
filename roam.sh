@@ -14,10 +14,8 @@ _roam() {
 	git --git-dir "$HOME/.dotfiles.git" --work-tree "$HOME" "$@"
 }
 
-help() {
-	echo "1. ./roam.sh setup"
-	echo "2. ./roam.sh checkout master"
-	echo "3. PROFIT"
+setup-checkout() {
+    _roam checkout "$1"
 }
 
 setup-init() {
@@ -30,25 +28,48 @@ setup-remote() {
 }
 
 setup() {
+    # shellcheck disable=1090
+    source "$(git --exec-path)/git-sh-setup"
+
+	local branch="master" opt="" repo="$USER/dotfiles"
+	while [ $# -gt 0 ]; do
+		opt="$1"
+		shift
+		case $opt in
+			--) break;;
+			-b) branch="$1"; shift;;
+			-r) repo="$1"; shift;;
+	esac
+ 
 	setup-init
-	setup-remote "$@"
+	setup-remote "$repo"
+    setup-checkout "$branch"
 }
 
-if test "$#" -eq 0
-then
-	help
-	exit 1
-fi
+main() {
+	case "$1" in
+	setup)
+ 		shift;
+		setup "$@";;
+	*)
+		_roam "$@";;
+	esac
+}
 
-case "$1" in
-help)
-	help "$@";;
-setup)
-	setup "$@";;
-setup-init)
-	setup-init "$@";;
-setup-remote)
-	setup-remote "$@";;
-*)
-	_roam "$@"
-esac
+# shellcheck disable=SC2034
+# NONGIT_OK is used by `git-sh-setup`.
+NONGIT_OK=1
+
+# shellcheck disable=SC2034
+# OPTIONS_SPEC is used by `git-sh-setup`.
+OPTIONS_SPEC="\
+roam setup [-r <repo>] [-b <branch>]
+
+Otherwise use roam like git.
+--
+h,help     show the help
+r,repo=    repo name (default: $USER/dotfiles)
+b,branch=  branch name (default: master)
+"
+
+main "$@"
