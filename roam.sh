@@ -3,7 +3,6 @@
 # Original notes on this are at https://gist.github.com/nnutter/42a83f2a0479c9a53b813b3c49eff09d.
 #
 # TODO:
-#   - Add help docs.
 #   - Add subcommand to install roam.sh permanently.
 #   - Add subcommand to complete roam as git for bash and zsh:
 #       - `complete -F _git roam` for bash. In the past it looks like I also used
