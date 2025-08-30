@@ -22,3 +22,26 @@ My one slight annoyance is the manual set up required for a new host/account whi
     ```
     wget -qO- https://github.com/nnutter/roam/raw/refs/heads/master/roam.sh | bash -s -- setup -r <repo> -b <branch>
     ```
+
+## Shell Completion
+
+### Bash
+
+```bash
+complete -F _git roam
+```
+
+Maybe somehow also use,
+
+```bash
+-o bashdefault -o default -o nospace
+```
+
+### Zsh
+
+```zsh
+#compdef roam
+
+# Use git's completion function for roam command
+compdef roam=git
+```

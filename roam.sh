@@ -4,10 +4,6 @@
 #
 # TODO:
 #   - Add subcommand to install roam.sh permanently.
-#   - Add subcommand to complete roam as git for bash and zsh:
-#       - `complete -F _git roam` for bash. In the past it looks like I also used
-#           the options, `-o bashdefault -o default -o nospace`.
-#       - `compdef roam=git` for zsh
 
 _roam() {
 	git --git-dir "$HOME/.dotfiles.git" --work-tree "$HOME" "$@"
