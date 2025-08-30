@@ -6,50 +6,58 @@
 #   - Add subcommand to install roam.sh permanently.
 
 _roam() {
-	git --git-dir "$HOME/.dotfiles.git" --work-tree "$HOME" "$@"
+  git --git-dir "$HOME/.dotfiles.git" --work-tree "$HOME" "$@"
 }
 
 setup-checkout() {
-	_roam checkout "$1"
+  _roam checkout "$1"
 }
 
 setup-init() {
-	_roam init
-	_roam config status.showUntrackedFiles no
+  _roam init
+  _roam config status.showUntrackedFiles no
 }
 
 setup-remote() {
-	_roam remote add -f origin git@github.com:"$1".git
+  _roam remote add -f origin git@github.com:"$1".git
 }
 
 setup() {
-	# shellcheck disable=1090
-	source "$(git --exec-path)/git-sh-setup"
+  # shellcheck disable=1090
+  source "$(git --exec-path)/git-sh-setup"
 
-	local branch="master" opt="" repo="$USER/dotfiles"
-	while [ $# -gt 0 ]; do
-		opt="$1"
-		shift
-		case $opt in
-			--) break;;
-			-b) branch="$1"; shift;;
-			-r) repo="$1"; shift;;
-		esac
-	done
+  local branch="master" opt="" repo="$USER/dotfiles"
+  while [ $# -gt 0 ]; do
+    opt="$1"
+    shift
+    case $opt in
+    --) break ;;
+    -b)
+      branch="$1"
+      shift
+      ;;
+    -r)
+      repo="$1"
+      shift
+      ;;
+    esac
+  done
 
-	setup-init
-	setup-remote "$repo"
-	setup-checkout "$branch"
+  setup-init
+  setup-remote "$repo"
+  setup-checkout "$branch"
 }
 
 main() {
-	case "$1" in
-		setup)
-			shift;
-			setup "$@";;
-		*)
-			_roam "$@";;
-	esac
+  case "$1" in
+  setup)
+    shift
+    setup "$@"
+    ;;
+  *)
+    _roam "$@"
+    ;;
+  esac
 }
 
 # shellcheck disable=SC2034
