@@ -48,11 +48,18 @@ setup() {
   setup-checkout "$branch"
 }
 
+update() {
+  _roam fetch && _roam rebase --autostash
+}
+
 main() {
   case "$1" in
   setup)
     shift
     setup "$@"
+    ;;
+  update)
+    update
     ;;
   *)
     _roam "$@"
