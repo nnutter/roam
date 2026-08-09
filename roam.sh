@@ -52,6 +52,10 @@ update() {
   _roam fetch && _roam rebase --autostash
 }
 
+sync() {
+  update && _roam push
+}
+
 main() {
   case "$1" in
   setup)
@@ -60,6 +64,9 @@ main() {
     ;;
   update)
     update
+    ;;
+  sync)
+    sync
     ;;
   *)
     _roam "$@"
