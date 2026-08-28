@@ -17,10 +17,16 @@ My one slight annoyance is the manual set up required for a new host/account whi
 
 1. Install Git.
 2. Setup Git access to GitHub.
-3. Setup Roam,
+3. Install roam,
 
     ```
-    wget -qO- https://github.com/nnutter/roam/raw/refs/heads/master/roam.sh | bash -s -- setup -r <repo> -b <branch>
+    go install github.com/nnutter/roam@latest
+    ```
+
+4. Setup roam,
+
+    ```
+    roam setup -r <repo> -b <branch>
     ```
 
 ## Shell Completion
