@@ -77,10 +77,8 @@ func TestSetupHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
-	err := app.run(t.Context(), []string{"setup", "-h"})
-	ee, ok := errors.AsType[*exitError](err)
-	if !ok || ee.code != gitUsageExit {
-		t.Fatalf("error = %v, want exit %d", err, gitUsageExit)
+	if err := app.run(t.Context(), []string{"setup", "-h"}); err != nil {
+		t.Fatalf("setup -h: %v", err)
 	}
 	if !strings.Contains(stdout.String(), "roam setup") {
 		t.Fatalf("help = %q, want it to mention roam setup", stdout.String())
@@ -90,9 +88,8 @@ func TestSetupHelp(t *testing.T) {
 func TestSetupUnknownOption(t *testing.T) {
 	app, logPath := testApp(t)
 	err := app.run(t.Context(), []string{"setup", "--bogus"})
-	ee, ok := errors.AsType[*exitError](err)
-	if !ok || ee.code != 1 {
-		t.Fatalf("error = %v, want exit 1", err)
+	if err == nil {
+		t.Fatal("expected an error")
 	}
 	if _, statErr := os.Stat(logPath); !errors.Is(statErr, os.ErrNotExist) {
 		t.Fatalf("git should not have been invoked: %v", statErr)
@@ -142,6 +139,18 @@ func TestGitPassthrough(t *testing.T) {
 	assertCalls(t, got, want)
 }
 
+func TestGitHelpPassthrough(t *testing.T) {
+	app, logPath := testApp(t)
+	if err := app.run(t.Context(), []string{"help", "status"}); err != nil {
+		t.Fatalf("help status: %v", err)
+	}
+	got := gitCalls(t, logPath)
+	want := [][]string{
+		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "help", "status"},
+	}
+	assertCalls(t, got, want)
+}
+
 func TestGitFailureStopsChain(t *testing.T) {
 	app, logPath := testApp(t)
 	failGit(t, app, "fetch")
@@ -156,9 +165,6 @@ func TestGitFailureStopsChain(t *testing.T) {
 }
 
 func TestExitCode(t *testing.T) {
-	if code := exitCode(&exitError{code: 129}); code != 129 {
-		t.Fatalf("exitCode(help) = %d", code)
-	}
 	if code := exitCode(errors.New("boom")); code != 1 {
 		t.Fatalf("exitCode(plain) = %d", code)
 	}

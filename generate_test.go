@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,12 +45,11 @@ func TestGenerateZshExistsWithoutForce(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := app.run(t.Context(), []string{"generate", "zsh", "-o", out})
-	ee, ok := errors.AsType[*exitError](err)
-	if !ok || ee.code != 1 {
-		t.Fatalf("error = %v, want exit 1", err)
+	if err == nil {
+		t.Fatal("expected an error")
 	}
-	if !strings.Contains(ee.msg, "already exists") {
-		t.Fatalf("error = %q, want already exists", ee.msg)
+	if !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("error = %q, want already exists", err)
 	}
 	got, err := os.ReadFile(path)
 	if err != nil {
@@ -88,13 +86,11 @@ func TestGenerateZshHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
-	err := app.run(t.Context(), []string{"generate", "zsh", "--help"})
-	ee, ok := errors.AsType[*exitError](err)
-	if !ok || ee.code != gitUsageExit {
-		t.Fatalf("error = %v, want exit %d", err, gitUsageExit)
+	if err := app.run(t.Context(), []string{"generate", "zsh", "--help"}); err != nil {
+		t.Fatalf("generate zsh --help: %v", err)
 	}
 	help := stdout.String()
-	for _, want := range []string{"FLAGS", "-f --force", "-o --out", "~/.local/share/zsh/site-functions"} {
+	for _, want := range []string{"--force", "--out", "~/.local/share/zsh/site-functions"} {
 		if !strings.Contains(help, want) {
 			t.Fatalf("help = %q, want it to contain %q", help, want)
 		}
@@ -105,13 +101,11 @@ func TestGenerateHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
-	err := app.run(t.Context(), []string{"generate", "-h"})
-	ee, ok := errors.AsType[*exitError](err)
-	if !ok || ee.code != gitUsageExit {
-		t.Fatalf("error = %v, want exit %d", err, gitUsageExit)
+	if err := app.run(t.Context(), []string{"generate", "-h"}); err != nil {
+		t.Fatalf("generate -h: %v", err)
 	}
-	if !strings.Contains(stdout.String(), "roam generate zsh") {
-		t.Fatalf("help = %q, want roam generate zsh", stdout.String())
+	if !strings.Contains(stdout.String(), "zsh") {
+		t.Fatalf("help = %q, want zsh", stdout.String())
 	}
 }
 
@@ -129,8 +123,7 @@ func TestGenerateZshTildeOut(t *testing.T) {
 func TestGenerateUnknown(t *testing.T) {
 	app, _ := testApp(t)
 	err := app.run(t.Context(), []string{"generate", "fish"})
-	ee, ok := errors.AsType[*exitError](err)
-	if !ok || ee.code != 1 {
-		t.Fatalf("error = %v, want exit 1", err)
+	if err == nil {
+		t.Fatal("expected an error")
 	}
 }
