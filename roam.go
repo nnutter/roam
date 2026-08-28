@@ -81,6 +81,8 @@ func (a *app) run(ctx context.Context, args []string) error {
 		return a.update(ctx)
 	case "sync":
 		return a.sync(ctx)
+	case "generate":
+		return a.generate(args[1:])
 	default:
 		return a.runGit(ctx, args...)
 	}

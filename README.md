@@ -45,9 +45,8 @@ Maybe somehow also use,
 
 ### Zsh
 
-```zsh
-#compdef roam
-
-# Use git's completion function for roam command
-compdef roam=git
 ```
+roam generate zsh
+```
+
+This writes `_roam` to `~/.local/share/zsh/site-functions`. Use `--out` to choose another directory and `--force` to overwrite an existing file.
