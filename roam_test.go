@@ -7,16 +7,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
+
+	"charm.land/fang/v2"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetupDefaultFlags(t *testing.T) {
 	app, logPath := testApp(t)
-	if err := app.run(t.Context(), []string{"setup"}); err != nil {
-		t.Fatalf("setup: %v", err)
-	}
+	require.NoError(t, app.run(t.Context(), []string{"setup"}))
 	got := gitCalls(t, logPath)
 	home := app.home
 	gitDir := filepath.Join(home, ".dotfiles.git")
@@ -26,7 +27,7 @@ func TestSetupDefaultFlags(t *testing.T) {
 		{"--git-dir", gitDir, "--work-tree", home, "remote", "add", "-f", "origin", "git@github.com:tester/dotfiles.git"},
 		{"--git-dir", gitDir, "--work-tree", home, "checkout", "master"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestSetupCustomFlags(t *testing.T) {
@@ -58,17 +59,43 @@ func TestSetupCustomFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			app, logPath := testApp(t)
-			if err := app.run(t.Context(), tt.args); err != nil {
-				t.Fatalf("setup: %v", err)
-			}
+			require.NoError(t, app.run(t.Context(), tt.args))
 			got := gitCalls(t, logPath)
+			home := app.home
+			gitDir := filepath.Join(home, ".dotfiles.git")
 			origin := "git@github.com:" + tt.repo + ".git"
-			if last := got[len(got)-2]; last[len(last)-1] != origin {
-				t.Fatalf("origin = %q, want %q", last[len(last)-1], origin)
+			want := [][]string{
+				{"--git-dir", gitDir, "--work-tree", home, "init"},
+				{"--git-dir", gitDir, "--work-tree", home, "config", "status.showUntrackedFiles", "no"},
+				{"--git-dir", gitDir, "--work-tree", home, "remote", "add", "-f", "origin", origin},
+				{"--git-dir", gitDir, "--work-tree", home, "checkout", tt.branch},
 			}
-			if last := got[len(got)-1]; last[len(last)-1] != tt.branch {
-				t.Fatalf("branch = %q, want %q", last[len(last)-1], tt.branch)
+			require.Equal(t, want, got)
+		})
+	}
+}
+
+func TestRootHelp(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "no args", args: []string{}},
+		{name: "short flag", args: []string{"-h"}},
+		{name: "long flag", args: []string{"--help"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app, logPath := testApp(t)
+			var stdout bytes.Buffer
+			app.stdout = &stdout
+			require.NoError(t, app.run(t.Context(), tt.args))
+			help := stdout.String()
+			for _, want := range []string{"setup", "update", "sync", "generate"} {
+				require.Contains(t, help, want)
 			}
+			_, statErr := os.Stat(logPath)
+			require.ErrorIs(t, statErr, os.ErrNotExist)
 		})
 	}
 }
@@ -77,30 +104,20 @@ func TestSetupHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
-	if err := app.run(t.Context(), []string{"setup", "-h"}); err != nil {
-		t.Fatalf("setup -h: %v", err)
-	}
-	if !strings.Contains(stdout.String(), "roam setup") {
-		t.Fatalf("help = %q, want it to mention roam setup", stdout.String())
-	}
+	require.NoError(t, app.run(t.Context(), []string{"setup", "-h"}))
+	require.Contains(t, stdout.String(), "roam setup")
 }
 
 func TestSetupUnknownOption(t *testing.T) {
 	app, logPath := testApp(t)
-	err := app.run(t.Context(), []string{"setup", "--bogus"})
-	if err == nil {
-		t.Fatal("expected an error")
-	}
-	if _, statErr := os.Stat(logPath); !errors.Is(statErr, os.ErrNotExist) {
-		t.Fatalf("git should not have been invoked: %v", statErr)
-	}
+	require.Error(t, app.run(t.Context(), []string{"setup", "--bogus"}))
+	_, statErr := os.Stat(logPath)
+	require.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestUpdate(t *testing.T) {
 	app, logPath := testApp(t)
-	if err := app.run(t.Context(), []string{"update"}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, app.run(t.Context(), []string{"update"}))
 	got := gitCalls(t, logPath)
 	home := app.home
 	gitDir := filepath.Join(home, ".dotfiles.git")
@@ -108,14 +125,12 @@ func TestUpdate(t *testing.T) {
 		{"--git-dir", gitDir, "--work-tree", home, "fetch"},
 		{"--git-dir", gitDir, "--work-tree", home, "rebase", "--autostash"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestSync(t *testing.T) {
 	app, logPath := testApp(t)
-	if err := app.run(t.Context(), []string{"sync"}); err != nil {
-		t.Fatalf("sync: %v", err)
-	}
+	require.NoError(t, app.run(t.Context(), []string{"sync"}))
 	got := gitCalls(t, logPath)
 	home := app.home
 	gitDir := filepath.Join(home, ".dotfiles.git")
@@ -124,50 +139,84 @@ func TestSync(t *testing.T) {
 		{"--git-dir", gitDir, "--work-tree", home, "rebase", "--autostash"},
 		{"--git-dir", gitDir, "--work-tree", home, "push"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestGitPassthrough(t *testing.T) {
 	app, logPath := testApp(t)
-	if err := app.run(t.Context(), []string{"status", "--short"}); err != nil {
-		t.Fatalf("status: %v", err)
-	}
+	require.NoError(t, app.run(t.Context(), []string{"status", "--short"}))
 	got := gitCalls(t, logPath)
 	want := [][]string{
 		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "status", "--short"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
+}
+
+func TestGitPassthroughLeadingFlag(t *testing.T) {
+	app, logPath := testApp(t)
+	require.NoError(t, app.run(t.Context(), []string{"--no-pager", "log"}))
+	got := gitCalls(t, logPath)
+	want := [][]string{
+		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "--no-pager", "log"},
+	}
+	require.Equal(t, want, got)
+}
+
+func TestGitPassthroughStdout(t *testing.T) {
+	app, _ := testApp(t)
+	var stdout bytes.Buffer
+	app.stdout = &stdout
+	require.NoError(t, app.run(t.Context(), []string{"status"}))
+	require.Contains(t, stdout.String(), "fake-git:status")
 }
 
 func TestGitHelpPassthrough(t *testing.T) {
 	app, logPath := testApp(t)
-	if err := app.run(t.Context(), []string{"help", "status"}); err != nil {
-		t.Fatalf("help status: %v", err)
-	}
+	require.NoError(t, app.run(t.Context(), []string{"help", "status"}))
 	got := gitCalls(t, logPath)
 	want := [][]string{
 		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "help", "status"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestGitFailureStopsChain(t *testing.T) {
 	app, logPath := testApp(t)
 	failGit(t, app, "fetch")
 	err := app.run(t.Context(), []string{"sync"})
-	if _, ok := errors.AsType[*exec.ExitError](err); !ok {
-		t.Fatalf("error = %v, want exec.ExitError", err)
-	}
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
 	got := gitCalls(t, logPath)
-	if len(got) != 1 || got[0][len(got[0])-1] != "fetch" {
-		t.Fatalf("calls = %v, want only fetch", got)
-	}
+	require.Len(t, got, 1)
+	require.Equal(t, "fetch", got[0][len(got[0])-1])
 }
 
 func TestExitCode(t *testing.T) {
-	if code := exitCode(errors.New("boom")); code != 1 {
-		t.Fatalf("exitCode(plain) = %d", code)
-	}
+	require.Equal(t, 1, exitCode(errors.New("boom")))
+}
+
+func TestExitCodePropagatesGitExitCode(t *testing.T) {
+	app, _ := testApp(t)
+	failGit(t, app, "fetch")
+	err := app.run(t.Context(), []string{"fetch"})
+	require.Error(t, err)
+	require.Equal(t, 3, exitCode(err))
+}
+
+func TestErrorHandlerSuppressesGitExitError(t *testing.T) {
+	app, _ := testApp(t)
+	failGit(t, app, "fetch")
+	err := app.run(t.Context(), []string{"fetch"})
+	require.Error(t, err)
+	var buf bytes.Buffer
+	errorHandler(&buf, fang.Styles{}, err)
+	require.Empty(t, buf.String())
+}
+
+func TestErrorHandlerPrintsOtherErrors(t *testing.T) {
+	var buf bytes.Buffer
+	errorHandler(&buf, fang.Styles{}, errors.New("boom"))
+	require.Contains(t, buf.String(), "boom")
 }
 
 func testApp(t *testing.T) (*app, string) {
@@ -186,16 +235,15 @@ for arg in "$@"; do
   last=$arg
 done
 printf '\n' >>"$log"
+printf 'fake-git:%s\n' "$last"
 if [ -f "$failfile" ]; then
   read fail <"$failfile"
   if [ "$last" = "$fail" ]; then
-    exit 1
+    exit 3
   fi
 fi
 `
-	if err := os.WriteFile(gitPath, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(gitPath, []byte(script), 0o755))
 	return &app{
 		home:   home,
 		git:    gitPath,
@@ -209,9 +257,7 @@ fi
 func failGit(t *testing.T, a *app, subcmd string) {
 	t.Helper()
 	failPath := filepath.Join(filepath.Dir(a.git), "fail")
-	if err := os.WriteFile(failPath, []byte(subcmd+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(failPath, []byte(subcmd+"\n"), 0o644))
 }
 
 func shellQuote(s string) string {
@@ -221,9 +267,7 @@ func shellQuote(s string) string {
 func gitCalls(t *testing.T, path string) [][]string {
 	t.Helper()
 	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	var calls [][]string
 	var cur []string
 	for line := range strings.SplitSeq(string(data), "\n") {
@@ -237,16 +281,4 @@ func gitCalls(t *testing.T, path string) [][]string {
 		cur = append(cur, line)
 	}
 	return calls
-}
-
-func assertCalls(t *testing.T, got, want [][]string) {
-	t.Helper()
-	if len(got) != len(want) {
-		t.Fatalf("got %d git calls, want %d\ngot:  %v\nwant: %v", len(got), len(want), got, want)
-	}
-	for i := range want {
-		if !slices.Equal(got[i], want[i]) {
-			t.Fatalf("call %d: got %v, want %v", i, got[i], want[i])
-		}
-	}
 }

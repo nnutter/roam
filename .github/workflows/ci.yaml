@@ -27,5 +27,11 @@ jobs:
         with:
           version: 2026.8.5
 
-      - name: Run CI checks
-        run: mise run ci
+      - name: Run fixers
+        run: mise run fixers
+
+      - name: Run tests
+        run: mise run ci-tests
+
+      - name: Run govulncheck
+        run: mise run lint-govulncheck
