@@ -153,6 +153,24 @@ func TestGitPassthrough(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestGitPassthroughLeadingFlag(t *testing.T) {
+	app, logPath := testApp(t)
+	require.NoError(t, app.run(t.Context(), []string{"--no-pager", "log"}))
+	got := gitCalls(t, logPath)
+	want := [][]string{
+		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "--no-pager", "log"},
+	}
+	require.Equal(t, want, got)
+}
+
+func TestGitPassthroughStdout(t *testing.T) {
+	app, _ := testApp(t)
+	var stdout bytes.Buffer
+	app.stdout = &stdout
+	require.NoError(t, app.run(t.Context(), []string{"status"}))
+	require.Contains(t, stdout.String(), "fake-git:status")
+}
+
 func TestGitHelpPassthrough(t *testing.T) {
 	app, logPath := testApp(t)
 	require.NoError(t, app.run(t.Context(), []string{"help", "status"}))
@@ -218,6 +236,7 @@ for arg in "$@"; do
   last=$arg
 done
 printf '\n' >>"$log"
+printf 'fake-git:%s\n' "$last"
 if [ -f "$failfile" ]; then
   read fail <"$failfile"
   if [ "$last" = "$fail" ]; then
