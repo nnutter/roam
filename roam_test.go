@@ -3,12 +3,15 @@ package main
 import (
 	"bytes"
 	"errors"
+
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"charm.land/fang/v2"
 
 	"github.com/stretchr/testify/require"
 )
@@ -175,6 +178,30 @@ func TestExitCode(t *testing.T) {
 	require.Equal(t, 1, exitCode(errors.New("boom")))
 }
 
+func TestExitCodePropagatesGitExitCode(t *testing.T) {
+	app, _ := testApp(t)
+	failGit(t, app, "fetch")
+	err := app.run(t.Context(), []string{"fetch"})
+	require.Error(t, err)
+	require.Equal(t, 3, exitCode(err))
+}
+
+func TestErrorHandlerSuppressesGitExitError(t *testing.T) {
+	app, _ := testApp(t)
+	failGit(t, app, "fetch")
+	err := app.run(t.Context(), []string{"fetch"})
+	require.Error(t, err)
+	var buf bytes.Buffer
+	errorHandler(&buf, fang.Styles{}, err)
+	require.Empty(t, buf.String())
+}
+
+func TestErrorHandlerPrintsOtherErrors(t *testing.T) {
+	var buf bytes.Buffer
+	errorHandler(&buf, fang.Styles{}, errors.New("boom"))
+	require.Contains(t, buf.String(), "boom")
+}
+
 func testApp(t *testing.T) (*app, string) {
 	t.Helper()
 	home := t.TempDir()
@@ -194,7 +221,7 @@ printf '\n' >>"$log"
 if [ -f "$failfile" ]; then
   read fail <"$failfile"
   if [ "$last" = "$fail" ]; then
-    exit 1
+    exit 3
   fi
 fi
 `
