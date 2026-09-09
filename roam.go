@@ -55,6 +55,7 @@ func (a *app) command() *cobra.Command {
 		Use:                "roam",
 		Short:              "Manage dotfiles with a bare Git repository",
 		Long:               "Use roam like git, with extra commands for a home-directory work tree.",
+		Version:            version,
 		SilenceUsage:       true,
 		SilenceErrors:      true,
 		DisableFlagParsing: true,
@@ -62,6 +63,13 @@ func (a *app) command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 || isHelpArg(args) {
 				return cmd.Help()
+			}
+			if isVersionArg(args) {
+				_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s version %s\n", cmd.DisplayName(), cmd.Version)
+				return err
+			}
+			if isGitVersionArg(args) {
+				return a.runGit(cmd.Context(), "--version")
 			}
 			return a.runGit(cmd.Context(), args...)
 		},
