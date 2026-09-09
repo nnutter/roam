@@ -59,11 +59,16 @@ func TestSetupCustomFlags(t *testing.T) {
 			app, logPath := testApp(t)
 			require.NoError(t, app.run(t.Context(), tt.args))
 			got := gitCalls(t, logPath)
+			home := app.home
+			gitDir := filepath.Join(home, ".dotfiles.git")
 			origin := "git@github.com:" + tt.repo + ".git"
-			last := got[len(got)-2]
-			require.Equal(t, origin, last[len(last)-1])
-			last = got[len(got)-1]
-			require.Equal(t, tt.branch, last[len(last)-1])
+			want := [][]string{
+				{"--git-dir", gitDir, "--work-tree", home, "init"},
+				{"--git-dir", gitDir, "--work-tree", home, "config", "status.showUntrackedFiles", "no"},
+				{"--git-dir", gitDir, "--work-tree", home, "remote", "add", "-f", "origin", origin},
+				{"--git-dir", gitDir, "--work-tree", home, "checkout", tt.branch},
+			}
+			require.Equal(t, want, got)
 		})
 	}
 }
