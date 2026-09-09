@@ -12,6 +12,8 @@ import (
 	"charm.land/fang/v2"
 )
 
+var version = "dev"
+
 func main() {
 	app, err := newApp()
 	if err != nil {
@@ -22,7 +24,7 @@ func main() {
 		context.Background(),
 		app.command(),
 		fang.WithoutCompletions(),
-		fang.WithoutVersion(),
+		fang.WithVersion(version),
 		fang.WithErrorHandler(errorHandler),
 		fang.WithNotifySignal(os.Interrupt),
 	)

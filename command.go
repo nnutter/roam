@@ -10,3 +10,12 @@ func isHelpArg(args []string) bool {
 	}
 	return slices.Contains(helpArgs, args[0])
 }
+
+var versionArgs = []string{"-v", "--version"}
+
+func isVersionArg(args []string) bool {
+	if len(args) != 1 {
+		return false
+	}
+	return slices.Contains(versionArgs, args[0])
+}
