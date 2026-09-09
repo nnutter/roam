@@ -19,3 +19,7 @@ func isVersionArg(args []string) bool {
 	}
 	return slices.Contains(versionArgs, args[0])
 }
+
+func isGitVersionArg(args []string) bool {
+	return len(args) == 1 && args[0] == "--git-version"
+}

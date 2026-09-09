@@ -68,6 +68,9 @@ func (a *app) command() *cobra.Command {
 				_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s version %s\n", cmd.DisplayName(), cmd.Version)
 				return err
 			}
+			if isGitVersionArg(args) {
+				return a.runGit(cmd.Context(), "--version")
+			}
 			return a.runGit(cmd.Context(), args...)
 		},
 	}
