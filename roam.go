@@ -50,53 +50,6 @@ func newApp() (*app, error) {
 	}, nil
 }
 
-func (a *app) gitDir() string {
-	return filepath.Join(a.home, ".dotfiles.git")
-}
-
-func (a *app) defaultRepo() string {
-	return a.user + "/dotfiles"
-}
-
-func (a *app) runGit(ctx context.Context, args ...string) error {
-	cmdArgs := make([]string, 0, 4+len(args))
-	cmdArgs = append(cmdArgs, "--git-dir", a.gitDir(), "--work-tree", a.home)
-	cmdArgs = append(cmdArgs, args...)
-	cmd := exec.CommandContext(ctx, a.git, cmdArgs...)
-	cmd.Stdin = a.stdin
-	cmd.Stdout = a.stdout
-	cmd.Stderr = a.stderr
-	return cmd.Run()
-}
-
-func (a *app) setup(ctx context.Context, repo, branch string) error {
-	if err := a.runGit(ctx, "init"); err != nil {
-		return err
-	}
-	if err := a.runGit(ctx, "config", "status.showUntrackedFiles", "no"); err != nil {
-		return err
-	}
-	origin := "git@github.com:" + repo + ".git"
-	if err := a.runGit(ctx, "remote", "add", "-f", "origin", origin); err != nil {
-		return err
-	}
-	return a.runGit(ctx, "checkout", branch)
-}
-
-func (a *app) update(ctx context.Context) error {
-	if err := a.runGit(ctx, "fetch"); err != nil {
-		return err
-	}
-	return a.runGit(ctx, "rebase", "--autostash")
-}
-
-func (a *app) sync(ctx context.Context) error {
-	if err := a.update(ctx); err != nil {
-		return err
-	}
-	return a.runGit(ctx, "push")
-}
-
 func (a *app) command() *cobra.Command {
 	root := &cobra.Command{
 		Use:                "roam",
@@ -124,48 +77,22 @@ func (a *app) command() *cobra.Command {
 	return root
 }
 
-func (a *app) setupCommand() *cobra.Command {
-	repo := a.defaultRepo()
-	branch := defaultBranch
-	cmd := &cobra.Command{
-		Use:           "setup",
-		Short:         "Initialize the dotfiles repository",
-		Args:          cobra.NoArgs,
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return a.setup(cmd.Context(), repo, branch)
-		},
-	}
-	cmd.Flags().StringVarP(&repo, "repo", "r", repo, "repo name")
-	cmd.Flags().StringVarP(&branch, "branch", "b", branch, "branch name")
-	return cmd
+func (a *app) defaultRepo() string {
+	return a.user + "/dotfiles"
 }
 
-func (a *app) updateCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:           "update",
-		Short:         "Fetch and rebase with autostash",
-		Args:          cobra.NoArgs,
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return a.update(cmd.Context())
-		},
-	}
+func (a *app) defaultZshOut() string {
+	return filepath.Join(a.home, ".local/share/zsh/site-functions")
 }
 
-func (a *app) syncCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:           "sync",
-		Short:         "Update and push",
-		Args:          cobra.NoArgs,
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return a.sync(cmd.Context())
-		},
+func (a *app) expandOut(out string) string {
+	if out == "~" {
+		return a.home
 	}
+	if rest, ok := strings.CutPrefix(out, "~/"); ok {
+		return filepath.Join(a.home, rest)
+	}
+	return out
 }
 
 func (a *app) generateCommand() *cobra.Command {
@@ -202,19 +129,6 @@ func (a *app) generateCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *app) run(ctx context.Context, args []string) error {
-	cmd := a.command()
-	cmd.SetArgs(args)
-	cmd.SetIn(a.stdin)
-	cmd.SetOut(a.stdout)
-	cmd.SetErr(a.stderr)
-	return cmd.ExecuteContext(ctx)
-}
-
-func (a *app) defaultZshOut() string {
-	return filepath.Join(a.home, ".local/share/zsh/site-functions")
-}
-
 func (a *app) generateZsh(force bool, out string) error {
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		return err
@@ -232,12 +146,98 @@ func (a *app) generateZsh(force bool, out string) error {
 	return os.WriteFile(path, zshCompletion, 0o644)
 }
 
-func (a *app) expandOut(out string) string {
-	if out == "~" {
-		return a.home
+func (a *app) gitDir() string {
+	return filepath.Join(a.home, ".dotfiles.git")
+}
+
+func (a *app) run(ctx context.Context, args []string) error {
+	cmd := a.command()
+	cmd.SetArgs(args)
+	cmd.SetIn(a.stdin)
+	cmd.SetOut(a.stdout)
+	cmd.SetErr(a.stderr)
+	return cmd.ExecuteContext(ctx)
+}
+
+func (a *app) runGit(ctx context.Context, args ...string) error {
+	cmdArgs := make([]string, 0, 4+len(args))
+	cmdArgs = append(cmdArgs, "--git-dir", a.gitDir(), "--work-tree", a.home)
+	cmdArgs = append(cmdArgs, args...)
+	cmd := exec.CommandContext(ctx, a.git, cmdArgs...)
+	cmd.Stdin = a.stdin
+	cmd.Stdout = a.stdout
+	cmd.Stderr = a.stderr
+	return cmd.Run()
+}
+
+func (a *app) setup(ctx context.Context, repo, branch string) error {
+	if err := a.runGit(ctx, "init"); err != nil {
+		return err
 	}
-	if rest, ok := strings.CutPrefix(out, "~/"); ok {
-		return filepath.Join(a.home, rest)
+	if err := a.runGit(ctx, "config", "status.showUntrackedFiles", "no"); err != nil {
+		return err
 	}
-	return out
+	origin := "git@github.com:" + repo + ".git"
+	if err := a.runGit(ctx, "remote", "add", "-f", "origin", origin); err != nil {
+		return err
+	}
+	return a.runGit(ctx, "checkout", branch)
+}
+
+func (a *app) setupCommand() *cobra.Command {
+	repo := a.defaultRepo()
+	branch := defaultBranch
+	cmd := &cobra.Command{
+		Use:           "setup",
+		Short:         "Initialize the dotfiles repository",
+		Args:          cobra.NoArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return a.setup(cmd.Context(), repo, branch)
+		},
+	}
+	cmd.Flags().StringVarP(&repo, "repo", "r", repo, "repo name")
+	cmd.Flags().StringVarP(&branch, "branch", "b", branch, "branch name")
+	return cmd
+}
+
+func (a *app) sync(ctx context.Context) error {
+	if err := a.update(ctx); err != nil {
+		return err
+	}
+	return a.runGit(ctx, "push")
+}
+
+func (a *app) syncCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:           "sync",
+		Short:         "Update and push",
+		Args:          cobra.NoArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return a.sync(cmd.Context())
+		},
+	}
+}
+
+func (a *app) update(ctx context.Context) error {
+	if err := a.runGit(ctx, "fetch"); err != nil {
+		return err
+	}
+	return a.runGit(ctx, "rebase", "--autostash")
+}
+
+func (a *app) updateCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:           "update",
+		Short:         "Fetch and rebase with autostash",
+		Args:          cobra.NoArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return a.update(cmd.Context())
+		},
+	}
 }
