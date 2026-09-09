@@ -73,6 +73,31 @@ func TestSetupCustomFlags(t *testing.T) {
 	}
 }
 
+func TestRootHelp(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "no args", args: []string{}},
+		{name: "short flag", args: []string{"-h"}},
+		{name: "long flag", args: []string{"--help"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app, logPath := testApp(t)
+			var stdout bytes.Buffer
+			app.stdout = &stdout
+			require.NoError(t, app.run(t.Context(), tt.args))
+			help := stdout.String()
+			for _, want := range []string{"setup", "update", "sync", "generate"} {
+				require.Contains(t, help, want)
+			}
+			_, statErr := os.Stat(logPath)
+			require.ErrorIs(t, statErr, os.ErrNotExist)
+		})
+	}
+}
+
 func TestSetupHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
