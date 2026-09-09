@@ -25,7 +25,7 @@ func TestSetupDefaultFlags(t *testing.T) {
 		{"--git-dir", gitDir, "--work-tree", home, "remote", "add", "-f", "origin", "git@github.com:tester/dotfiles.git"},
 		{"--git-dir", gitDir, "--work-tree", home, "checkout", "master"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestSetupCustomFlags(t *testing.T) {
@@ -93,7 +93,7 @@ func TestUpdate(t *testing.T) {
 		{"--git-dir", gitDir, "--work-tree", home, "fetch"},
 		{"--git-dir", gitDir, "--work-tree", home, "rebase", "--autostash"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestSync(t *testing.T) {
@@ -107,7 +107,7 @@ func TestSync(t *testing.T) {
 		{"--git-dir", gitDir, "--work-tree", home, "rebase", "--autostash"},
 		{"--git-dir", gitDir, "--work-tree", home, "push"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestGitPassthrough(t *testing.T) {
@@ -117,7 +117,7 @@ func TestGitPassthrough(t *testing.T) {
 	want := [][]string{
 		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "status", "--short"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestGitHelpPassthrough(t *testing.T) {
@@ -127,7 +127,7 @@ func TestGitHelpPassthrough(t *testing.T) {
 	want := [][]string{
 		{"--git-dir", filepath.Join(app.home, ".dotfiles.git"), "--work-tree", app.home, "help", "status"},
 	}
-	assertCalls(t, got, want)
+	require.Equal(t, want, got)
 }
 
 func TestGitFailureStopsChain(t *testing.T) {
@@ -206,9 +206,4 @@ func gitCalls(t *testing.T, path string) [][]string {
 		cur = append(cur, line)
 	}
 	return calls
-}
-
-func assertCalls(t *testing.T, got, want [][]string) {
-	t.Helper()
-	require.Equal(t, want, got)
 }
