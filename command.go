@@ -1,5 +1,12 @@
 package main
 
+import "slices"
+
+var helpArgs = []string{"-h", "--help"}
+
 func isHelpArg(args []string) bool {
-	return len(args) == 1 && (args[0] == "-h" || args[0] == "--help")
+	if len(args) != 1 {
+		return false
+	}
+	return slices.Contains(helpArgs, args[0])
 }
