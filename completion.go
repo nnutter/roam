@@ -1,32 +1,10 @@
 package main
 
 import (
-	_ "embed"
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
-
-//go:embed _roam
-var zshCompletion []byte
-
-func defaultZshOut(a *app) string {
-	return filepath.Join(a.home, ".local/share/zsh/site-functions")
-}
-
-func expandOut(a *app, out string) string {
-	if out == "~" {
-		return a.home
-	}
-	if rest, ok := strings.CutPrefix(out, "~/"); ok {
-		return filepath.Join(a.home, rest)
-	}
-	return out
-}
 
 func completionCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
@@ -44,67 +22,6 @@ func completionCommand(a *app) *cobra.Command {
 			return cmd.Help()
 		},
 	}
-	var force bool
-	out := defaultZshOut(a)
-	bash := completionBashCommand()
-	zsh := &cobra.Command{
-		Use:   "zsh",
-		Short: "Generate the autocompletion script for zsh",
-		Long: `Generate the autocompletion script for the zsh shell.
-
-If shell completion is not already enabled in your environment you will need
-to enable it.  You can execute the following once:
-
-	echo "autoload -U compinit; compinit" >> ~/.zshrc
-
-To load completions in your current shell session:
-
-	source <(roam completion zsh)
-
-To load completions for every new session, execute once:
-
-#### Linux:
-
-	roam completion zsh > "${fpath[1]}/_roam"
-
-#### macOS:
-
-	roam completion zsh > $(brew --prefix)/share/zsh/site-functions/_roam
-
-You will need to start a new shell for this setup to take effect.
-
-Alternatively, use --out to write _roam to a directory directly,
-with --force to overwrite an existing file.`,
-		Args:          cobra.NoArgs,
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			if cmd.Flags().Changed("out") {
-				return completionZsh(force, expandOut(a, out))
-			}
-			_, err := cmd.OutOrStdout().Write(zshCompletion)
-			return err
-		},
-	}
-	zsh.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing generated files")
-	zsh.Flags().StringVarP(&out, "out", "o", out, "Output directory for generated files (~/.local/share/zsh/site-functions)")
-	cmd.AddCommand(bash, zsh)
+	cmd.AddCommand(completionBashCommand(), completionZshCommand(a))
 	return cmd
-}
-
-func completionZsh(force bool, out string) error {
-	if err := os.MkdirAll(out, 0o755); err != nil {
-		return err
-	}
-	path := filepath.Join(out, "_roam")
-	_, err := os.Stat(path)
-	switch {
-	case err == nil:
-		if !force {
-			return fmt.Errorf("%s already exists; use --force to overwrite", path)
-		}
-	case !errors.Is(err, os.ErrNotExist):
-		return err
-	}
-	return os.WriteFile(path, zshCompletion, 0o644)
 }
