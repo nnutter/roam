@@ -34,7 +34,7 @@ My one slight annoyance is the manual set up required for a new host/account whi
 ### Bash
 
 ```bash
-complete -F _git roam
+eval "$(roam completion bash)"
 ```
 
 Maybe somehow also use,
