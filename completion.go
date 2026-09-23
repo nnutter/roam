@@ -80,13 +80,42 @@ You will need to start a new shell for this setup to take effect.`,
 		},
 	}
 	zsh := &cobra.Command{
-		Use:           "zsh",
-		Short:         "Generate the autocompletion script for zsh",
+		Use:   "zsh",
+		Short: "Generate the autocompletion script for zsh",
+		Long: `Generate the autocompletion script for the zsh shell.
+
+If shell completion is not already enabled in your environment you will need
+to enable it.  You can execute the following once:
+
+	echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+To load completions in your current shell session:
+
+	source <(roam completion zsh)
+
+To load completions for every new session, execute once:
+
+#### Linux:
+
+	roam completion zsh > "${fpath[1]}/_roam"
+
+#### macOS:
+
+	roam completion zsh > $(brew --prefix)/share/zsh/site-functions/_roam
+
+You will need to start a new shell for this setup to take effect.
+
+Alternatively, use --out to write _roam to a directory directly,
+with --force to overwrite an existing file.`,
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return completionZsh(force, expandOut(a, out))
+			if cmd.Flags().Changed("out") {
+				return completionZsh(force, expandOut(a, out))
+			}
+			_, err := cmd.OutOrStdout().Write(zshCompletion)
+			return err
 		},
 	}
 	zsh.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing generated files")

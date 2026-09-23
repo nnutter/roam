@@ -37,8 +37,4 @@ Run `roam completion bash --help` for instructions.
 
 ### Zsh
 
-```
-roam completion zsh
-```
-
-This writes `_roam` to `~/.local/share/zsh/site-functions`. Use `--out` to choose another directory and `--force` to overwrite an existing file.
+Run `roam completion zsh --help` for instructions.
