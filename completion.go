@@ -46,6 +46,17 @@ func (a *app) completionCommand() *cobra.Command {
 	}
 	var force bool
 	out := a.defaultZshOut()
+	bash := &cobra.Command{
+		Use:           "bash",
+		Short:         "Generate the autocompletion script for bash",
+		Args:          cobra.NoArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := fmt.Fprintln(cmd.OutOrStdout(), "complete -F _git roam")
+			return err
+		},
+	}
 	zsh := &cobra.Command{
 		Use:           "zsh",
 		Short:         "Generate the autocompletion script for zsh",
@@ -58,7 +69,7 @@ func (a *app) completionCommand() *cobra.Command {
 	}
 	zsh.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing generated files")
 	zsh.Flags().StringVarP(&out, "out", "o", out, "Output directory for generated files (~/.local/share/zsh/site-functions)")
-	cmd.AddCommand(zsh)
+	cmd.AddCommand(bash, zsh)
 	return cmd
 }
 

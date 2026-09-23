@@ -9,6 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCompletionBash(t *testing.T) {
+	app, _ := testApp(t)
+	var stdout bytes.Buffer
+	app.stdout = &stdout
+	require.NoError(t, app.run(t.Context(), []string{"completion", "bash"}))
+	require.Equal(t, "complete -F _git roam\n", stdout.String())
+}
+
 func TestCompletionZsh(t *testing.T) {
 	app, _ := testApp(t)
 	out := filepath.Join(app.home, "completions")
@@ -67,7 +75,9 @@ func TestCompletionHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	app.stdout = &stdout
 	require.NoError(t, app.run(t.Context(), []string{"completion", "-h"}))
-	require.Contains(t, stdout.String(), "zsh")
+	help := stdout.String()
+	require.Contains(t, help, "bash")
+	require.Contains(t, help, "zsh")
 }
 
 func TestCompletionZshTildeOut(t *testing.T) {
