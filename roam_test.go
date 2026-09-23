@@ -91,7 +91,7 @@ func TestRootHelp(t *testing.T) {
 			app.stdout = &stdout
 			require.NoError(t, app.run(t.Context(), tt.args))
 			help := stdout.String()
-			for _, want := range []string{"setup", "update", "sync", "generate"} {
+			for _, want := range []string{"setup", "update", "sync", "completion"} {
 				require.Contains(t, help, want)
 			}
 			_, statErr := os.Stat(logPath)

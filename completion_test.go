@@ -9,29 +9,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateZsh(t *testing.T) {
+func TestCompletionZsh(t *testing.T) {
 	app, _ := testApp(t)
 	out := filepath.Join(app.home, "completions")
-	require.NoError(t, app.run(t.Context(), []string{"generate", "zsh", "--out", out}))
+	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh", "--out", out}))
 	got, err := os.ReadFile(filepath.Join(out, "_roam"))
 	require.NoError(t, err)
 	require.Equal(t, string(zshCompletion), string(got))
 }
 
-func TestGenerateZshDefaultOut(t *testing.T) {
+func TestCompletionZshDefaultOut(t *testing.T) {
 	app, _ := testApp(t)
-	require.NoError(t, app.run(t.Context(), []string{"generate", "zsh"}))
+	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh"}))
 	path := filepath.Join(app.home, ".local/share/zsh/site-functions", "_roam")
 	require.FileExists(t, path)
 }
 
-func TestGenerateZshExistsWithoutForce(t *testing.T) {
+func TestCompletionZshExistsWithoutForce(t *testing.T) {
 	app, _ := testApp(t)
 	out := filepath.Join(app.home, "completions")
 	path := filepath.Join(out, "_roam")
 	require.NoError(t, os.MkdirAll(out, 0o755))
 	require.NoError(t, os.WriteFile(path, []byte("old\n"), 0o644))
-	err := app.run(t.Context(), []string{"generate", "zsh", "-o", out})
+	err := app.run(t.Context(), []string{"completion", "zsh", "-o", out})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "already exists")
 	got, err := os.ReadFile(path)
@@ -39,45 +39,45 @@ func TestGenerateZshExistsWithoutForce(t *testing.T) {
 	require.Equal(t, "old\n", string(got))
 }
 
-func TestGenerateZshForce(t *testing.T) {
+func TestCompletionZshForce(t *testing.T) {
 	app, _ := testApp(t)
 	out := filepath.Join(app.home, "completions")
 	path := filepath.Join(out, "_roam")
 	require.NoError(t, os.MkdirAll(out, 0o755))
 	require.NoError(t, os.WriteFile(path, []byte("old\n"), 0o644))
-	require.NoError(t, app.run(t.Context(), []string{"generate", "zsh", "--force", "--out=" + out}))
+	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh", "--force", "--out=" + out}))
 	got, err := os.ReadFile(path)
 	require.NoError(t, err)
 	require.Equal(t, string(zshCompletion), string(got))
 }
 
-func TestGenerateZshHelp(t *testing.T) {
+func TestCompletionZshHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
-	require.NoError(t, app.run(t.Context(), []string{"generate", "zsh", "--help"}))
+	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh", "--help"}))
 	help := stdout.String()
 	for _, want := range []string{"--force", "--out", "~/.local/share/zsh/site-functions"} {
 		require.Contains(t, help, want)
 	}
 }
 
-func TestGenerateHelp(t *testing.T) {
+func TestCompletionHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
-	require.NoError(t, app.run(t.Context(), []string{"generate", "-h"}))
+	require.NoError(t, app.run(t.Context(), []string{"completion", "-h"}))
 	require.Contains(t, stdout.String(), "zsh")
 }
 
-func TestGenerateZshTildeOut(t *testing.T) {
+func TestCompletionZshTildeOut(t *testing.T) {
 	app, _ := testApp(t)
-	require.NoError(t, app.run(t.Context(), []string{"generate", "zsh", "-o", "~/custom"}))
+	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh", "-o", "~/custom"}))
 	path := filepath.Join(app.home, "custom", "_roam")
 	require.FileExists(t, path)
 }
 
-func TestGenerateUnknown(t *testing.T) {
+func TestCompletionUnknown(t *testing.T) {
 	app, _ := testApp(t)
-	require.Error(t, app.run(t.Context(), []string{"generate", "fish"}))
+	require.Error(t, app.run(t.Context(), []string{"completion", "fish"}))
 }

@@ -28,10 +28,10 @@ func (a *app) expandOut(out string) string {
 	return out
 }
 
-func (a *app) generateCommand() *cobra.Command {
+func (a *app) completionCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "generate",
-		Short:         "Generate shell completion files",
+		Use:           "completion",
+		Short:         "Generate the autocompletion script for the specified shell",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args: func(_ *cobra.Command, args []string) error {
@@ -48,12 +48,12 @@ func (a *app) generateCommand() *cobra.Command {
 	out := a.defaultZshOut()
 	zsh := &cobra.Command{
 		Use:           "zsh",
-		Short:         "Generate zsh completion for roam",
+		Short:         "Generate the autocompletion script for zsh",
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return a.generateZsh(force, a.expandOut(out))
+			return a.completionZsh(force, a.expandOut(out))
 		},
 	}
 	zsh.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing generated files")
@@ -62,7 +62,7 @@ func (a *app) generateCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *app) generateZsh(force bool, out string) error {
+func (a *app) completionZsh(force bool, out string) error {
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		return err
 	}

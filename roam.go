@@ -78,7 +78,7 @@ func (a *app) command() *cobra.Command {
 		a.setupCommand(),
 		a.updateCommand(),
 		a.syncCommand(),
-		a.generateCommand(),
+		a.completionCommand(),
 	)
 	return root
 }

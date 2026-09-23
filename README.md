@@ -46,7 +46,7 @@ Maybe somehow also use,
 ### Zsh
 
 ```
-roam generate zsh
+roam completion zsh
 ```
 
 This writes `_roam` to `~/.local/share/zsh/site-functions`. Use `--out` to choose another directory and `--force` to overwrite an existing file.
