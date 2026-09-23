@@ -14,11 +14,11 @@ import (
 //go:embed _roam
 var zshCompletion []byte
 
-func (a *app) defaultZshOut() string {
+func defaultZshOut(a *app) string {
 	return filepath.Join(a.home, ".local/share/zsh/site-functions")
 }
 
-func (a *app) expandOut(out string) string {
+func expandOut(a *app, out string) string {
 	if out == "~" {
 		return a.home
 	}
@@ -28,7 +28,7 @@ func (a *app) expandOut(out string) string {
 	return out
 }
 
-func (a *app) completionCommand() *cobra.Command {
+func completionCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "completion",
 		Short:         "Generate the autocompletion script for the specified shell",
@@ -45,10 +45,32 @@ func (a *app) completionCommand() *cobra.Command {
 		},
 	}
 	var force bool
-	out := a.defaultZshOut()
+	out := defaultZshOut(a)
 	bash := &cobra.Command{
-		Use:           "bash",
-		Short:         "Generate the autocompletion script for bash",
+		Use:   "bash",
+		Short: "Generate the autocompletion script for bash",
+		Long: `Generate the autocompletion script for the bash shell.
+
+This aliases roam completion to git completion, since roam wraps git.
+It needs git's bash completion, usually provided by the 'bash-completion'
+package. If it is not installed already, you can install it via your OS's
+package manager.
+
+To load completions in your current shell session:
+
+	source <(roam completion bash)
+
+To load completions for every new session, execute once:
+
+#### Linux:
+
+	roam completion bash > /etc/bash_completion.d/roam
+
+#### macOS:
+
+	roam completion bash > $(brew --prefix)/etc/bash_completion.d/roam
+
+You will need to start a new shell for this setup to take effect.`,
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -64,7 +86,7 @@ func (a *app) completionCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return a.completionZsh(force, a.expandOut(out))
+			return completionZsh(force, expandOut(a, out))
 		},
 	}
 	zsh.Flags().BoolVarP(&force, "force", "f", false, "Overwrite existing generated files")
@@ -73,7 +95,7 @@ func (a *app) completionCommand() *cobra.Command {
 	return cmd
 }
 
-func (a *app) completionZsh(force bool, out string) error {
+func completionZsh(force bool, out string) error {
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		return err
 	}

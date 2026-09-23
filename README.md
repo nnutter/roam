@@ -33,15 +33,7 @@ My one slight annoyance is the manual set up required for a new host/account whi
 
 ### Bash
 
-```bash
-eval "$(roam completion bash)"
-```
-
-Maybe somehow also use,
-
-```bash
--o bashdefault -o default -o nospace
-```
+Run `roam completion bash --help` for instructions.
 
 ### Zsh
 

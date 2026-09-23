@@ -59,6 +59,14 @@ func TestCompletionZshForce(t *testing.T) {
 	require.Equal(t, string(zshCompletion), string(got))
 }
 
+func TestCompletionBashHelp(t *testing.T) {
+	app, _ := testApp(t)
+	var stdout bytes.Buffer
+	app.stdout = &stdout
+	require.NoError(t, app.run(t.Context(), []string{"completion", "bash", "--help"}))
+	require.Contains(t, stdout.String(), "source <(roam completion bash)")
+}
+
 func TestCompletionZshHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
