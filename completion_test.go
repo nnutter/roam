@@ -28,9 +28,13 @@ func TestCompletionZsh(t *testing.T) {
 
 func TestCompletionZshDefaultOut(t *testing.T) {
 	app, _ := testApp(t)
+	var stdout bytes.Buffer
+	app.stdout = &stdout
 	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh"}))
+	require.Equal(t, string(zshCompletion), stdout.String())
 	path := filepath.Join(app.home, ".local/share/zsh/site-functions", "_roam")
-	require.FileExists(t, path)
+	_, statErr := os.Stat(path)
+	require.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestCompletionZshExistsWithoutForce(t *testing.T) {
@@ -59,13 +63,21 @@ func TestCompletionZshForce(t *testing.T) {
 	require.Equal(t, string(zshCompletion), string(got))
 }
 
+func TestCompletionBashHelp(t *testing.T) {
+	app, _ := testApp(t)
+	var stdout bytes.Buffer
+	app.stdout = &stdout
+	require.NoError(t, app.run(t.Context(), []string{"completion", "bash", "--help"}))
+	require.Contains(t, stdout.String(), "source <(roam completion bash)")
+}
+
 func TestCompletionZshHelp(t *testing.T) {
 	app, _ := testApp(t)
 	var stdout bytes.Buffer
 	app.stdout = &stdout
 	require.NoError(t, app.run(t.Context(), []string{"completion", "zsh", "--help"}))
 	help := stdout.String()
-	for _, want := range []string{"--force", "--out", "~/.local/share/zsh/site-functions"} {
+	for _, want := range []string{"--force", "--out", "~/.local/share/zsh/site-functions", "source <(roam completion zsh)"} {
 		require.Contains(t, help, want)
 	}
 }
