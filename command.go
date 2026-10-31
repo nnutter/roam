@@ -21,5 +21,8 @@ func isVersionArg(args []string) bool {
 }
 
 func isGitVersionArg(args []string) bool {
-	return len(args) == 1 && args[0] == "--git-version"
+	if len(args) != 1 {
+		return false
+	}
+	return args[0] == "--git-version"
 }
