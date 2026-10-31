@@ -1,5 +1,10 @@
 [tools]
 go = "latest"
+hk = "2.8.0"
+pkl = "latest"
+tombi = "latest"
+yamlfmt = "latest"
+"github:nnutter/mdlint" = "latest"
 
 #####################
 # Development Tasks #
@@ -24,9 +29,9 @@ alias = "cover"
 description = "Run tests and generate coverage report"
 run = "go test -coverprofile=coverage.out -covermode=atomic ./... && go tool cover -func=coverage.out"
 
-[tasks.install-hooks]
-description = "Install Lefthook git hooks"
-run = "go tool lefthook install"
+[tasks.setup]
+description = "Install hk Git hooks without removing other hook managers"
+run = "hk install --mise"
 
 [tasks.pre-commit]
 description = "Format staged files"
