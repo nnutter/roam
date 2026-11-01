@@ -11,16 +11,15 @@ yamlfmt = "latest"
 #####################
 
 [tasks.all]
-description = "Run fixers, tests, and linters"
+description = "Run fixes, tests, and checks"
 run = '''
 #!/usr/bin/env bash
-mise run fixers
-mise run tests
-mise run linters
+mise run fix
+mise run test
+mise run check
 '''
 
-[tasks.ci-tests]
-alias = "test"
+[tasks.ci-test]
 description = "Run tests (with the race detector)"
 run = "go test -race -shuffle=on ./..."
 
@@ -39,20 +38,18 @@ usage = 'arg "[staged_files]" var=#true'
 run = '''
 #!/usr/bin/env bash
 go tool gitleaks git --redact --pre-commit --staged
-mise run fixers ${usage_staged_files}
+mise run fix ${usage_staged_files}
 '''
 
-[tasks.tests]
-alias = "test"
-description = "Run tests (with the race detector)"
+[tasks.test]
+description = "Run tests with coverage"
 run = "go test -cover ./..."
 
 #############
 # Fix Tasks #
 #############
 
-[tasks.fixers]
-alias = "fix"
+[tasks.fix]
 usage = 'arg "[staged_files]" var=#true'
 run = '''
 #!/usr/bin/env bash
@@ -103,10 +100,12 @@ go tool testifylint -fix ${usage_staged_files:-.}
 # Lint Tasks #
 ##############
 
-[tasks.linters]
+[tasks.check]
 alias = "static-analysis"
+description = "Run checks and static analysis"
 run = '''
 #!/usr/bin/env bash
+hk check --all
 mise run lint-constable
 mise run lint-errcheck
 mise run lint-gitleaks
