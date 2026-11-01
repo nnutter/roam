@@ -25,13 +25,23 @@ gitleaks = "latest"
 #####################
 
 [tasks.all]
-description = "Run fixes, tests, and checks"
+description = "Run fix, test, and check"
+run = [{ task = "fix" }, { task = "test" }, { task = "check" }]
+
+[tasks.fix]
+description = "Fix all files, or only the supplied files"
+usage = 'arg "[staged_files]" var=#true'
 run = '''
-#!/usr/bin/env bash
-mise run fix
-mise run test
-mise run check
+if [ -z "${usage_staged_files:-}" ]; then
+  hk fix --all
+else
+  hk fix ${usage_staged_files}
+fi
 '''
+
+[tasks.check]
+description = "Check all files without writing fixes"
+run = "hk check --all"
 
 [tasks.ci-test]
 description = "Run tests (with the race detector)"
@@ -46,128 +56,6 @@ run = "go test -coverprofile=coverage.out -covermode=atomic ./... && go tool cov
 description = "Install hk Git hooks without removing other hook managers"
 run = "hk install --mise"
 
-[tasks.pre-commit]
-description = "Format staged files"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-gitleaks git --redact --pre-commit --staged
-mise run fix ${usage_staged_files}
-'''
-
 [tasks.test]
 description = "Run tests with coverage"
 run = "go test -cover ./..."
-
-#############
-# Fix Tasks #
-#############
-
-[tasks.fix]
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-mise run fix-go-mod-tidy
-mise run fix-gofumpt ${usage_staged_files}
-mise run fix-goimports ${usage_staged_files}
-mise run fix-go-fix ${usage_staged_files}
-mise run fix-testifylint
-'''
-
-[tasks.fix-gofumpt]
-description = "Run code formatting tools"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-gofumpt -l -w ${usage_staged_files:-.}
-'''
-
-[tasks.fix-goimports]
-description = "Run code formatting tools"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-goimports -l -w -local $(go list -m) ${usage_staged_files:-.}
-'''
-
-[tasks.fix-go-fix]
-description = "Apply go fix"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-go fix ${usage_staged_files:-./...}
-'''
-
-[tasks.fix-go-mod-tidy]
-description = "Tidy go.mod and go.sum"
-run = "go mod tidy"
-
-[tasks.fix-testifylint]
-description = "Run testifylint static analysis"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-go tool testifylint -fix ${usage_staged_files:-.}
-'''
-
-##############
-# Lint Tasks #
-##############
-
-[tasks.check]
-alias = "static-analysis"
-description = "Run checks and static analysis"
-run = '''
-#!/usr/bin/env bash
-hk check --all
-mise run lint-constable
-mise run lint-errcheck
-mise run lint-gitleaks
-mise run lint-go-check-sumtype
-mise run lint-go-vet
-mise run lint-gosec
-mise run lint-govulncheck
-mise run lint-nilaway
-mise run lint-staticcheck
-mise run lint-testifylint
-'''
-
-[tasks.lint-constable]
-description = "Checks nonmutating directives"
-run = "constable ./..."
-
-[tasks.lint-errcheck]
-description = "Check for unhandled errors"
-run = "errcheck ./..."
-
-[tasks.lint-gitleaks]
-description = "Scan the Git history for secrets"
-run = "gitleaks dir --verbose --redact ."
-
-[tasks.lint-go-check-sumtype]
-description = "Check sealed sum-type switches for exhaustiveness"
-run = "go-check-sumtype ./..."
-
-[tasks.lint-go-vet]
-description = "Run go vet static analysis"
-run = "go vet ./..."
-
-[tasks.lint-gosec]
-description = "Run gosec static analysis"
-run = "gosec -severity high -quiet ./..."
-
-[tasks.lint-govulncheck]
-description = "Check for vulnerabilities"
-run = "govulncheck ./..."
-
-[tasks.lint-nilaway]
-description = "Run nilaway on github.com/nnutter packages"
-run = "nilaway -include-pkgs $(go list -m) ./..."
-
-[tasks.lint-staticcheck]
-description = "Run staticcheck static analysis"
-run = "staticcheck ./..."
-
-[tasks.lint-testifylint]
-description = "Run testifylint static analysis"
-run = "go tool testifylint ./..."
