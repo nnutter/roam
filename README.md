@@ -4,7 +4,7 @@ Way back when I realized I could reasonably manage my dotfiles just using `git` 
 One caveat is that it's a little hard to tell what is or isn't managed.
 However, it's not too hard to check specific locations, e.g.,
 
-```
+```bash
 roam status --untracked-files -- ~/bin
 ```
 
@@ -16,18 +16,20 @@ My one slight annoyance is the manual set up required for a new host/account whi
 ## Installation
 
 1. Install Git.
-2. Setup Git access to GitHub.
-3. Install roam,
 
-    ```
-    go install github.com/nnutter/roam@latest
-    ```
+1. Setup Git access to GitHub.
 
-4. Setup roam,
+1. Install roam,
 
-    ```
-    roam setup -r <repo> -b <branch>
-    ```
+   ```bash
+   go install github.com/nnutter/roam@latest
+   ```
+
+1. Setup roam,
+
+   ```bash
+   roam setup -r <repo> -b <branch>
+   ```
 
 ## Shell Completion
 
