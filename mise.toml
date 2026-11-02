@@ -43,6 +43,19 @@ fi
 description = "Check all files without writing fixes"
 run = "hk check --all"
 
+[tasks.on-start]
+description = "Run fix, test, and check before the agent starts"
+run = [{ task = "all" }]
+
+[tasks.on-stop]
+description = "Fix edited files, then test and check"
+usage = 'arg "[staged_files]" var=#true'
+run = [
+  "mise run fix ${usage_staged_files}",
+  "mise run test",
+  "mise run check",
+]
+
 [tasks.ci-test]
 description = "Run tests (with the race detector)"
 run = "go test -race -shuffle=on ./..."
