@@ -1,5 +1,5 @@
-.idea/
 .tmp/
 /roam
-coverage.out
 coverage.html
+coverage.out
+tmp/
