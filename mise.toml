@@ -17,7 +17,7 @@ jactionlint = "latest"
 "github:nnutter/constable" = "latest"
 "github:nnutter/mdlint" = "latest"
 "github:securego/gosec" = "latest"
-gitleaks = "latest"
+betterleaks = "latest"
 go = "latest"
 "go:github.com/kisielk/errcheck" = "latest"
 "go:github.com/kojah/gohawk" = "latest"
@@ -26,7 +26,7 @@ go = "latest"
 "go:golang.org/x/tools/cmd/goimports" = "latest"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 gofumpt = "latest"
-hk = "2.11.1"
+hk = "2.12.0"
 pkl = "latest"
 "pypi:agentskills-tools" = "latest"
 staticcheck = "latest"
@@ -76,3 +76,17 @@ run = "hk install --mise"
 [tasks.test]
 description = "Run tests with coverage"
 run = "go test -cover ./..."
+
+[tasks.upgrade]
+description = "Upgrade the tools to their newest releases"
+run = [
+  "mise upgrade",
+  # First-party tools bypass the release-age queue.
+  "mise upgrade --minimum-release-age 0 github:nnutter/constable@latest",
+  "mise upgrade --minimum-release-age 0 github:nnutter/mdlint@latest",
+  "mise upgrade --minimum-release-age 0 go:github.com/nnutter/testifylint@latest",
+  "mise lock --minimum-release-age 0 github:nnutter/constable@latest",
+  "mise lock --minimum-release-age 0 github:nnutter/mdlint@latest",
+  "mise lock --minimum-release-age 0 go:github.com/nnutter/testifylint@latest",
+  "mise lock",
+]
