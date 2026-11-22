@@ -41,16 +41,46 @@ jobs:
           GOARCH: ${{ matrix.platform.arch }}
         run: |
           name="${BINARY}_${TAG}_${GOOS}_${GOARCH}"
-          CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${TAG}" -o "$name" .
-          tar -czf "${name}.tar.gz" "$name"
+          # Keep the executable name stable so a consumer can find it without
+          # knowing the release tag.
+          CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${TAG}" -o "$BINARY" .
+          tar -czf "${name}.tar.gz" "$BINARY"
       - name: Upload the archive
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.platform.os }}-${{ matrix.platform.arch }}
           path: ${{ env.BINARY }}_${{ env.TAG }}_${{ matrix.platform.os }}_${{ matrix.platform.arch }}.tar.gz
           if-no-files-found: error
-  publish:
+  # Sign in a job that cannot write the release, then attach the bundle from
+  # the publish job.
+  packslip:
     needs: build
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Download the archives
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Sign the release manifest
+        uses: jdx/packslip@e0340e0c1d10c90a434de2b90f3a1ba345923564 # v1.11.4
+        with:
+          artifacts: dist/*.tar.gz
+          bin: roam
+          upload: false
+      - name: Upload the signed manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: packslip
+          path: packslip/packslip.sigstore.json
+          if-no-files-found: error
+  publish:
+    needs: [build, packslip]
     permissions:
       contents: write
     runs-on: ubuntu-26.04
@@ -72,6 +102,11 @@ jobs:
         with:
           path: dist
           merge-multiple: true
+      - name: Download the signed manifest
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: packslip
+          path: dist
       - name: Make the checksums
         run: cd dist && sha256sum -- *.tar.gz > checksums.txt
       - name: Read the release state
